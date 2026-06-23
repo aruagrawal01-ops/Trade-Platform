@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app) 
 
 # Connect to your local PostgreSQL database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:1234@localhost:5432/stock_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:DATA_BASE_PASSWORD@localhost:5432/DATABASE_NAME'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
