@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StoqNest Trade Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes flashGreen { 0% { background-color: rgba(16, 185, 129, 0.2); } 100% { background-color: transparent; } }
+        @keyframes flashRed { 0% { background-color: rgba(239, 68, 68, 0.2); } 100% { background-color: transparent; } }
+        .price-up-flash { animation: flashGreen 1s ease-out; }
+        .price-down-flash { animation: flashRed 1s ease-out; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111827; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans overflow-x-hidden select-none">
+
+    <div id="landing-page" class="min-h-screen bg-gray-900 flex flex-col justify-between">
+        <header class="w-full max-w-7xl mx-auto px-6 h-20 flex justify-between items-center border-b border-gray-800">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl font-black text-white tracking-tight flex items-center gap-1">📈 <span class="text-teal-400">StoqNest</span></span>
+            </div>
+            <div class="flex gap-6 items-center">
+                <a href="#features-section" class="text-gray-400 hover:text-white text-sm transition font-medium">Features</a>
+                <a href="#market-preview-section" class="text-gray-400 hover:text-white text-sm transition font-medium">Live Indices</a>
+                <button onclick="showAuthModal('login')" class="text-sm font-semibold text-white bg-gray-800 hover:bg-gray-750 px-5 py-2 rounded-lg border border-gray-700 transition">Log In</button>
+                <button onclick="showAuthModal('register')" class="text-sm font-semibold text-gray-900 bg-teal-400 hover:bg-teal-300 px-5 py-2 rounded-lg transition shadow-md shadow-teal-400/10">Sign Up</button>
+            </div>
+        </header>
+
+        <section class="max-w-7xl mx-auto px-6 pt-16 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center flex-1 w-full">
+            <div class="lg:col-span-7 space-y-6">
+                <div class="inline-flex items-center gap-2 bg-teal-500/10 border border-teal-500/20 text-teal-400 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                    ⚡ REAL-TIME TRADING ENGINE ACTIVE
+                </div>
+                <h2 class="text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] text-white">
+                    Invest in Nifty 50.<br>
+                    <span class="bg-gradient-to-r from-teal-400 via-emerald-400 to-blue-400 bg-clip-text text-transparent">Zero Capital Risk.</span>
+                </h2>
+                <p class="text-gray-400 text-lg max-w-xl leading-relaxed">
+                    Build your wealth management strategies with actual, dynamic Indian stock updates. Experience zero financial liability, full market depth execution, and live position charting metrics.
+                </p>
+                <div class="pt-2 flex items-center gap-4">
+                    <button onclick="showAuthModal('register')" class="bg-teal-400 hover:bg-teal-300 text-gray-900 font-bold px-8 py-4 rounded-xl shadow-xl shadow-teal-400/20 transition-all transform hover:-translate-y-0.5">Start Trading Free</button>
+                    <div class="text-xs text-gray-500 font-mono space-y-0.5 border-l border-gray-800 pl-4">
+                        <div>⚡ YFinance Feed Connection</div>
+                        <div class="flex items-center gap-1">📋 Complete 50 Asset Universe</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="market-preview-section" class="lg:col-span-5 bg-gradient-to-b from-gray-800 to-gray-850 p-6 rounded-2xl border border-gray-700 shadow-2xl relative overflow-hidden">
+                <div class="absolute -top-24 -right-24 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl"></div>
+                <h3 class="font-bold text-gray-200 mb-4 flex items-center justify-between text-sm uppercase tracking-wide">
+                    <span>MARKET PREVIEW MONITOR</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                </h3>
+                <div class="space-y-3">
+                    <div class="p-3.5 bg-gray-900/60 border border-gray-800 rounded-xl flex justify-between items-center">
+                        <span class="font-bold text-teal-300">RELIANCE</span>
+                        <span class="font-mono text-emerald-400 font-bold">₹2,452.10 (+1.4%)</span>
+                    </div>
+                    <div class="p-3.5 bg-gray-900/60 border border-gray-800 rounded-xl flex justify-between items-center">
+                        <span class="font-bold text-teal-300">HDFCBANK</span>
+                        <span class="font-mono text-red-400 font-bold">₹1,610.45 (-0.6%)</span>
+                    </div>
+                    <div class="p-3.5 bg-gray-900/60 border border-gray-800 rounded-xl flex justify-between items-center">
+                        <span class="font-bold text-teal-300">TCS</span>
+                        <span class="font-mono text-emerald-400 font-bold">₹3,890.15 (+0.9%)</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-800 grid grid-cols-2 gap-4 text-center font-mono">
+                    <div class="bg-gray-900/30 p-2.5 rounded-lg border border-gray-800">
+                        <div class="text-xs text-gray-500 uppercase">DEMO CAPITAL</div>
+                        <div class="text-base font-bold text-teal-400 mt-0.5">₹1,00,000</div>
+                    </div>
+                    <div class="bg-gray-900/30 p-2.5 rounded-lg border border-gray-800">
+                        <div class="text-xs text-gray-500 uppercase">PLATFORM CHARGE</div>
+                        <div class="text-base font-bold text-emerald-400 mt-0.5">₹0 / Free</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features-section" class="bg-gray-950 border-t border-gray-800 w-full">
+            <div class="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="space-y-2.5">
+                    <div class="text-3xl">⚡</div>
+                    <h4 class="text-lg font-bold text-white">Lightning Execution</h4>
+                    <p class="text-gray-400 text-sm leading-relaxed">Instantly processes buy and sell transactions directly inside your tracking node database with live price ticks.</p>
+                </div>
+                <div class="space-y-2.5">
+                    <div class="text-3xl">📊</div>
+                    <h4 class="text-lg font-bold text-white">Full Chart Engine</h4>
+                    <p class="text-gray-400 text-sm leading-relaxed">Integrated 5-day history charting modules rendered directly via high-density HTML5 canvas layers.</p>
+                </div>
+                <div class="space-y-2.5">
+                    <div class="text-3xl">💼</div>
+                    <h4 class="text-lg font-bold text-white">Unified Ledger Logs</h4>
+                    <p class="text-gray-400 text-sm leading-relaxed">Comprehensive historical order ledgers cleanly aggregate asset metrics, average costs, and dynamic P&L updates.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="w-full bg-gray-950 border-t border-gray-900 py-6 text-center text-xs font-mono text-gray-600">
+            © 2026 StoqNest Platform. Educational Sandbox Infrastructure. Powered by pgAdmin4 and Python 3.14.
+        </footer>
+    </div>
+
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-gray-850 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700 relative">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl transition">&times;</button>
+            <h2 id="auth-title" class="text-2xl font-black mb-6 text-center text-teal-400 tracking-tight">Authentication</h2>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Username</label>
+                <input type="text" id="username" class="w-full p-3 rounded-xl bg-gray-900 border border-gray-700 focus:outline-none focus:border-teal-400 font-medium font-mono text-white">
+            </div>
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Password</label>
+                <input type="password" id="password" class="w-full p-3 rounded-xl bg-gray-900 border border-gray-700 focus:outline-none focus:border-teal-400 font-medium font-mono text-white">
+            </div>
+            <button onclick="executeAuthentication()" id="auth-submit-btn" class="w-full bg-teal-400 hover:bg-teal-300 text-gray-900 py-3.5 rounded-xl font-bold transition shadow-xl"></button>
+        </div>
+    </div>
+
+    <div id="app-workspace" class="hidden min-h-screen flex flex-col">
+        <header class="bg-gray-800 p-4 shadow-md flex justify-between items-center border-b border-gray-700 sticky top-0 z-40">
+            <div class="flex items-center gap-8">
+                <h1 onclick="navigateTo('dashboard')" class="text-xl font-bold text-teal-400 cursor-pointer tracking-wide">📈 StoqNest</h1>
+                <nav class="flex gap-2">
+                    <button onclick="navigateTo('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-md font-medium text-sm transition bg-teal-500 text-white">Market Dashboard</button>
+                    <button onclick="navigateTo('portfolio')" id="nav-portfolio" class="px-4 py-2 rounded-md font-medium text-sm transition text-gray-300 hover:bg-gray-700">My Portfolio</button>
+                    <button onclick="navigateTo('history')" id="nav-history" class="px-4 py-2 rounded-md font-medium text-sm transition text-gray-300 hover:bg-gray-700">Order Logs</button>
+                </nav>
+            </div>
+            <div class="flex gap-6 text-sm items-center bg-gray-900/60 px-4 py-2 rounded-lg border border-gray-700">
+                <div>Balance: <span id="hdr-balance" class="font-bold text-green-400 font-mono">₹100,000</span></div>
+                <div>Portfolio Value: <span id="hdr-portfolio" class="font-bold text-blue-400 font-mono">₹0</span></div>
+                <div>Open Trades: <span id="hdr-trades" class="font-bold text-yellow-400 font-mono">0</span></div>
+                <button onclick="addMoneyPrompt()" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded text-xs font-bold transition">+ Add Funds</button>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-xs transition">Exit</button>
+            </div>
+        </header>
+
+        <main id="view-dashboard" class="flex-1 p-6 flex flex-col page-view max-h-[88vh]">
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <input type="text" id="market-search" oninput="filterMarkets()" placeholder="🔍 Live filter by name or ticker token..." class="w-full md:w-1/3 p-2.5 rounded-lg bg-gray-900 text-white border border-gray-700 text-sm focus:outline-none focus:border-teal-400 font-mono">
+                
+                <div class="flex gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+                    <button onclick="setSectorFilter('ALL')" id="sector-ALL" class="bg-teal-500 text-white text-xs font-bold px-3 py-1.5 rounded-md transition border border-teal-500/20 shadow-sm">All Sectors</button>
+                    <button onclick="setSectorFilter('BANK')" id="sector-BANK" class="bg-gray-900 hover:bg-gray-700 text-gray-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-md transition border border-gray-700">Banking</button>
+                    <button onclick="setSectorFilter('TECH')" id="sector-TECH" class="bg-gray-900 hover:bg-gray-700 text-gray-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-md transition border border-gray-700">Technology</button>
+                    <button onclick="setSectorFilter('ADANI')" id="sector-ADANI" class="bg-gray-900 hover:bg-gray-700 text-gray-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-md transition border border-gray-700">Adani Group</button>
+                    <button onclick="setSectorFilter('ENERGY')" id="sector-ENERGY" class="bg-gray-900 hover:bg-gray-700 text-gray-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-md transition border border-gray-700">Energy & Metal</button>
+                </div>
+            </div>
+
+            <div id="watchlist-wrapper" class="mb-4 bg-gray-800/40 border border-gray-700/60 p-3 rounded-xl hidden">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 px-1">⭐️ My Pinned Watchlist</h4>
+                <div id="watchlist-container" class="flex gap-3 overflow-x-auto pb-1"></div>
+            </div>
+
+            <div id="fallback-grid-view" class="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 pr-1"></div>
+
+            <div id="chart-analysis-view" class="hidden flex-1 grid grid-cols-3 gap-6 overflow-hidden">
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 col-span-2 flex flex-col justify-between overflow-y-auto">
+                    <div class="flex justify-between items-center border-b border-gray-700 pb-3 mb-2">
+                        <div>
+                            <h2 id="selected-ticker" class="text-3xl font-black text-teal-400 font-mono tracking-tight">TICKER</h2>
+                            <p class="text-sm text-gray-400 mt-1">Live Price: <span id="selected-price" class="text-white font-mono font-bold text-lg">₹0.00</span></p>
+                        </div>
+                        <button onclick="closeAnalysisView()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition flex items-center gap-1 shadow">✕ Return to Grid</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 my-2">
+                        <div class="bg-gray-900/40 p-3 rounded-lg border border-gray-700/60 flex flex-col shadow-inner">
+                            <span class="text-xs font-bold uppercase text-gray-500">Intraday High</span>
+                            <span id="focused-high" class="text-green-400 font-mono font-bold text-lg mt-0.5">₹0.00</span>
+                        </div>
+                        <div class="bg-gray-900/40 p-3 rounded-lg border border-gray-700/60 flex flex-col shadow-inner">
+                            <span class="text-xs font-bold uppercase text-gray-500">Intraday Low</span>
+                            <span id="focused-low" class="text-red-400 font-mono font-bold text-lg mt-0.5">₹0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="my-2 bg-gray-900/40 rounded-xl p-2 border border-gray-700 min-h-[280px]">
+                        <div id="candlestickChart"></div>
+                    </div>
+
+                    <div class="bg-gray-900 p-4 rounded-xl border border-gray-700 shadow-md">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <label class="text-sm text-gray-300 font-bold">Quantity:</label>
+                                <input type="number" id="trade-quantity" value="1" min="1" class="w-24 p-2 rounded bg-gray-800 text-white border border-gray-600 text-center font-mono font-bold focus:outline-none focus:border-teal-400">
+                            </div>
+                            <button onclick="executeTrade('BUY')" class="w-1/2 bg-green-500 hover:bg-green-600 py-3 rounded-lg font-bold transition shadow-xl text-white">Execute Instant Buy Order</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-700 flex flex-col overflow-y-auto">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 border-b border-gray-700 pb-2">Quick Navigation Menu</h3>
+                    <div id="sidebar-list-container" class="space-y-2 pr-1"></div>
+                </div>
+            </div>
+        </main>
+
+        <main id="view-portfolio" class="hidden flex-1 p-6 page-view overflow-y-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-md border-l-4 border-l-gray-600">
+                    <span class="text-xs text-gray-400 font-bold uppercase">Invested Capital</span>
+                    <div id="health-invested" class="text-2xl font-mono font-bold mt-1 text-white">₹0.00</div>
+                </div>
+                <div class="bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-md border-l-4 border-l-blue-500">
+                    <span class="text-xs text-gray-400 font-bold uppercase">Current Value</span>
+                    <div id="health-current" class="text-2xl font-mono font-bold mt-1 text-blue-400">₹0.00</div>
+                </div>
+                <div class="bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-md border-l-4 border-l-teal-500" id="health-pl-border">
+                    <span class="text-xs text-gray-400 font-bold uppercase">Total Unrealized P&L</span>
+                    <div id="health-pl" class="text-2xl font-mono font-bold mt-1">₹0.00</div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 flex flex-col">
+                <h2 class="text-xl font-bold text-teal-400 mb-6 flex items-center gap-2">💼 Active Strategic Portfolio</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-700 text-gray-400 text-sm">
+                                <th class="pb-3 pl-2">Ticker Symbol</th>
+                                <th class="pb-3">Shares Held</th>
+                                <th class="pb-3">Avg Buy Price</th>
+                                <th class="pb-3">Live Valuation</th>
+                                <th class="pb-3">Net P&L (₹)</th>
+                                <th class="pb-3 text-right pr-4">Position Management</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portfolio-table-body" class="divide-y divide-gray-800"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <main id="view-history" class="hidden flex-1 p-6 page-view">
+            <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 min-h-[75vh] flex flex-col">
+                <h2 class="text-2xl font-bold text-teal-400 mb-6 flex items-center gap-2">📜 Transaction Ledger</h2>
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-700 text-gray-400 text-sm">
+                                <th class="pb-3 pl-2">Execution Timestamp</th>
+                                <th class="pb-3">Asset Ticker</th>
+                                <th class="pb-3">Order Type</th>
+                                <th class="pb-3">Volume</th>
+                                <th class="pb-3 pr-4 text-right">Execution Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-gray-800 font-mono text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:5001/api"; 
+        let activeTicker = null;
+        let chartInstance = null; 
+        let refreshInterval = null;
+        let globalStocksCache = [];
+        let previousPriceMap = {}; 
+        let currentSectorFilter = "ALL";
+        let authActionType = 'login';
+        let watchlistArray = JSON.parse(localStorage.getItem('watchlist')) || [];
+
+        const SECTOR_MAP = {
+            "RELIANCE.NS": "ENERGY", "HDFCBANK.NS": "BANK", "ICICIBANK.NS": "BANK", "AXISBANK.NS": "BANK", "SBIN.NS": "BANK", "KOTAKBANK.NS": "BANK",
+            "TCS.NS": "TECH", "INFY.NS": "TECH", "HCLTECH.NS": "TECH", "WIPRO.NS": "TECH",
+            "ADANIPOWER.NS": "ADANI", "ADANIPORTS.NS": "ADANI", "ADANIENT.NS": "ADANI", "ADANIGREEN.NS": "ADANI", "ADANIENSOL.NS": "ADANI",
+            "JSWSTEEL.NS": "ENERGY", "TATASTEEL.NS": "ENERGY", "ONGC.NS": "ENERGY", "COALINDIA.NS": "ENERGY", "HINDZINC.NS": "ENERGY", "VEDL.NS": "ENERGY"
+        };
+
+        window.onload = () => {
+            if (localStorage.getItem("token")) showWorkspace();
+            else navigateToLanding();
+        };
+
+        function navigateToLanding() {
+            document.getElementById("landing-page").classList.remove("hidden");
+            document.getElementById("app-workspace").classList.add("hidden");
+            if (refreshInterval) clearInterval(refreshInterval);
+        }
+
+        function showWorkspace() {
+            document.getElementById("landing-page").classList.add("hidden");
+            document.getElementById("app-workspace").classList.remove("hidden");
+            navigateTo('dashboard');
+            refreshData();
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(refreshData, 10000); // 🛠️ Set to a lightning-fast but stable 2000ms loop
+        }
+
+        function showAuthModal(type) {
+            authActionType = type;
+            document.getElementById("auth-modal").classList.remove("hidden");
+            document.getElementById("auth-title").innerText = type === 'login' ? "Login to Workspace" : "Create Free Account";
+            document.getElementById("auth-submit-btn").innerText = type === 'login' ? "Access Environment" : "Complete Registration";
+        }
+
+        function closeAuthModal() { document.getElementById("auth-modal").classList.add("hidden"); }
+
+        async function executeAuthentication() {
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+            if(!username || !password) return alert("Please fill out parameters.");
+
+            try {
+                const res = await fetch(`${API_URL}/${authActionType}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+                if (res.ok) {
+                    closeAuthModal();
+                    localStorage.setItem("token", "BypassToken_Success");
+                    showWorkspace();
+                } else { alert("Authentication failed. Please verify credentials."); }
+            } catch (err) { alert("Server connectivity disconnect."); }
+        }
+
+        function setSectorFilter(sector) {
+            currentSectorFilter = sector;
+            document.querySelectorAll("[id^='sector-']").forEach(btn => {
+                btn.className = "bg-gray-900 hover:bg-gray-700 text-gray-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-md transition border border-gray-700";
+            });
+            document.getElementById(`sector-${sector}`).className = "bg-teal-500 text-white text-xs font-bold px-3 py-1.5 rounded-md transition border border-teal-500/20 shadow-sm";
+            filterMarkets();
+        }
+
+        function toggleWatchlist(ticker, event) {
+            event.stopPropagation();
+            if (watchlistArray.includes(ticker)) {
+                watchlistArray = watchlistArray.filter(x => x !== ticker);
+            } else {
+                watchlistArray.push(ticker);
+            }
+            localStorage.setItem('watchlist', JSON.stringify(watchlistArray));
+            filterMarkets();
+            renderWatchlist();
+        }
+
+        function renderWatchlist() {
+            const wrapper = document.getElementById("watchlist-wrapper");
+            const container = document.getElementById("watchlist-container");
+            container.innerHTML = "";
+
+            if (watchlistArray.length === 0) {
+                wrapper.classList.add("hidden");
+                return;
+            }
+            wrapper.classList.remove("hidden");
+
+            watchlistArray.forEach(ticker => {
+                const s = globalStocksCache.find(x => x.ticker === ticker);
+                if (!s) return;
+                const displayName = s.ticker.replace(".NS", "");
+
+                container.innerHTML += `
+                    <div onclick="selectStock('${s.ticker}', ${s.price}, ${s.high}, ${s.low})" class="p-3 bg-gray-800/90 border border-teal-500/30 rounded-xl min-w-[160px] cursor-pointer flex justify-between items-center hover:bg-gray-750 transition font-mono shadow-md">
+                        <div>
+                            <span class="font-bold text-gray-200 block text-xs font-sans">${displayName}</span>
+                            <span class="text-sm font-bold text-teal-400">₹${s.price.toFixed(2)}</span>
+                        </div>
+                        <button onclick="toggleWatchlist('${s.ticker}', event)" class="text-yellow-400 text-lg ml-2 hover:scale-110 transition">★</button>
+                    </div>`;
+            });
+        }
+
+        function navigateTo(targetView) {
+            document.querySelectorAll('.page-view').forEach(view => view.classList.add('hidden'));
+            document.querySelectorAll('header nav button').forEach(btn => {
+                btn.className = "px-4 py-2 rounded-md font-medium text-sm text-gray-300 hover:bg-gray-700 transition";
+            });
+
+            document.getElementById(`view-${targetView}`).classList.remove('hidden');
+            document.getElementById(`nav-${targetView}`).className = "px-4 py-2 rounded-md font-medium text-sm transition bg-teal-500 text-white shadow";
+            
+            if (targetView === 'portfolio') fetchAndRenderPortfolio();
+            if (targetView === 'history') fetchAndRenderHistory();
+        }
+
+        async function refreshData() {
+            try {
+                const res = await fetch(`${API_URL}/dashboard`);
+                const data = await res.json();
+                
+                document.getElementById("hdr-balance").innerText = `₹${data.balance.toLocaleString()}`;
+                document.getElementById("hdr-portfolio").innerText = `₹${data.portfolio_value.toLocaleString()}`;
+                document.getElementById("hdr-trades").innerText = data.open_trades;
+
+                globalStocksCache = data.stocks || [];
+                filterMarkets(); 
+                renderWatchlist();
+                
+                if(activeTicker) {
+                    const liveMatch = globalStocksCache.find(x => x.ticker === activeTicker);
+                    if(liveMatch) {
+                        document.getElementById("selected-price").innerText = `₹${liveMatch.price.toFixed(2)}`;
+                        document.getElementById("focused-high").innerText = `₹${liveMatch.high.toFixed(2)}`;
+                        document.getElementById("focused-low").innerText = `₹${liveMatch.low.toFixed(2)}`;
+                    }
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function filterMarkets() {
+            const query = document.getElementById("market-search").value.toLowerCase();
+            let filtered = globalStocksCache.filter(s => s.ticker.toLowerCase().includes(query));
+
+            if (currentSectorFilter !== "ALL") {
+                filtered = filtered.filter(s => SECTOR_MAP[s.ticker] === currentSectorFilter);
+            }
+
+            const gridContainer = document.getElementById("fallback-grid-view");
+            gridContainer.innerHTML = "";
+            const sidebarContainer = document.getElementById("sidebar-list-container");
+            sidebarContainer.innerHTML = "";
+
+            filtered.forEach(s => {
+                const displayName = s.ticker.replace(".NS", "");
+                const isStarred = watchlistArray.includes(s.ticker);
+                const starGlyph = isStarred ? "★" : "☆";
+                const starColorClass = isStarred ? "text-yellow-400" : "text-gray-500 hover:text-yellow-400";
+
+                let flashClass = "";
+                if (previousPriceMap[s.ticker]) {
+                    if (s.price > previousPriceMap[s.ticker]) flashClass = "price-up-flash";
+                    else if (s.price < previousPriceMap[s.ticker]) flashClass = "price-down-flash";
+                }
+                previousPriceMap[s.ticker] = s.price; 
+
+                gridContainer.innerHTML += `
+                    <div onclick="selectStock('${s.ticker}', ${s.price}, ${s.high}, ${s.low})" class="p-4 bg-gray-800 hover:bg-gray-750 border border-gray-700/70 rounded-xl cursor-pointer flex flex-col justify-between transition-all transform hover:-translate-y-0.5 shadow-md relative group ${flashClass}">
+                        <button onclick="toggleWatchlist('${s.ticker}', event)" class="absolute top-3 right-3 ${starColorClass} text-lg font-bold transition z-20">${starGlyph}</button>
+                        <span class="font-bold text-teal-400 text-sm tracking-wide font-mono">${displayName}</span>
+                        <div class="mt-2 font-mono">
+                            <span class="text-gray-400 text-xs block">Current</span>
+                            <span class="text-base font-bold text-white">₹${s.price.toFixed(2)}</span>
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-gray-700/50 grid grid-cols-2 text-[10px] text-gray-400 font-mono">
+                            <div>H: <span class="text-green-400">₹${s.high.toFixed(1)}</span></div>
+                            <div>L: <span class="text-red-400">₹${s.low.toFixed(1)}</span></div>
+                        </div>
+                    </div>`;
+
+                sidebarContainer.innerHTML += `
+                    <div onclick="selectStock('${s.ticker}', ${s.price}, ${s.high}, ${s.low})" class="p-2 bg-gray-900/40 hover:bg-gray-700 border border-gray-800 rounded-lg cursor-pointer flex justify-between items-center transition text-xs font-mono">
+                        <span class="font-bold text-gray-300">${displayName}</span>
+                        <span class="font-bold text-teal-300">₹${s.price.toFixed(1)}</span>
+                    </div>`;
+            });
+        }
+
+        async function selectStock(ticker, currentPrice, high, low) {
+            activeTicker = ticker;
+            
+            document.getElementById("fallback-grid-view").classList.add("hidden");
+            document.getElementById("chart-analysis-view").classList.remove("hidden");
+
+            document.getElementById("selected-ticker").innerText = ticker.replace(".NS", "");
+            document.getElementById("selected-price").innerText = `₹${currentPrice.toFixed(2)}`;
+            document.getElementById("focused-high").innerText = `₹${high.toFixed(2)}`;
+            document.getElementById("focused-low").innerText = `₹${low.toFixed(2)}`;
+
+            const res = await fetch(`${API_URL}/stock/${ticker}/chart`);
+            const chartData = await res.json();
+
+            if (chartInstance) chartInstance.destroy();
+
+            const options = {
+                series: [{
+                    data: chartData.map(item => ({
+                        x: new Date(item.x),
+                        y: item.y
+                    }))
+                }],
+                chart: {
+                    type: 'candlestick',
+                    height: 260,
+                    toolbar: { display: false },
+                    background: 'transparent'
+                },
+                theme: { mode: 'dark' },
+                xaxis: { type: 'datetime', labels: { style: { colors: '#6b7280' } } },
+                yaxis: { tooltip: { enabled: true }, labels: { style: { colors: '#9ca3af' } } },
+                plotOptions: {
+                    candlestick: {
+                        colors: { upward: '#10b981', downward: '#ef4444' }
+                    }
+                },
+                grid: { borderColor: '#374151' }
+            };
+
+            chartInstance = new ApexCharts(document.querySelector("#candlestickChart"), options);
+            chartInstance.render();
+        }
+
+        function closeAnalysisView() {
+            activeTicker = null;
+            document.getElementById("fallback-grid-view").classList.remove("hidden");
+            document.getElementById("chart-analysis-view").classList.add("hidden");
+            filterMarkets();
+        }
+
+        async function executeTrade(action) {
+            const shares = document.getElementById("trade-quantity").value;
+            if (shares <= 0) return alert("Specify valid values.");
+
+            const res = await fetch(`${API_URL}/trade`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ticker: activeTicker, shares, action })
+            });
+            const data = await res.json();
+            alert(data.message);
+            refreshData();
+        }
+
+        async function executePortfolioSell(ticker, inputId) {
+            const shares = document.getElementById(inputId).value;
+            if (shares <= 0) return alert("Specify volume parameters.");
+            
+            const res = await fetch(`${API_URL}/trade`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ticker, shares, action: 'SELL' })
+            });
+            const data = await res.json();
+            alert(data.message);
+            refreshData();
+            fetchAndRenderPortfolio();
+        }
+
+        async function fetchAndRenderPortfolio() {
+            try {
+                const res = await fetch(`${API_URL}/portfolio`);
+                const payload = await res.json();
+                
+                const holdings = payload.holdings || [];
+                const investedTotal = payload.total_invested || 0;
+
+                const liveRes = await fetch(`${API_URL}/dashboard`);
+                const liveData = await liveRes.json();
+                const marketValuationTotal = liveData.portfolio_value || 0;
+
+                const aggregatedPL = marketValuationTotal - investedTotal;
+                const plColorClass = aggregatedPL >= 0 ? "text-green-400" : "text-red-400";
+                const plSign = aggregatedPL >= 0 ? "+" : "";
+
+                document.getElementById("health-invested").innerText = `₹${investedTotal.toLocaleString()}`;
+                document.getElementById("health-current").innerText = `₹${marketValuationTotal.toLocaleString()}`;
+                document.getElementById("health-pl").innerText = `${plSign}₹${aggregatedPL.toLocaleString()}`;
+                document.getElementById("health-pl").className = `text-2xl font-mono font-bold mt-1 ${plColorClass}`;
+
+                const tbody = document.getElementById("portfolio-table-body");
+                tbody.innerHTML = "";
+                
+                if(holdings.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-gray-500 py-8 text-sm">No equity holdings active.</td></tr>`;
+                    return;
+                }
+
+                holdings.forEach(h => {
+                    const totalProfitLoss = h.current_value - (h.shares * h.avg_buy_price);
+                    const positionColorClass = totalProfitLoss >= 0 ? "text-green-400" : "text-red-400";
+                    tbody.innerHTML += `
+                        <tr class="text-sm border-b border-gray-800/60 hover:bg-gray-800/30 transition font-mono">
+                            <td class="py-4 pl-2 font-bold font-sans text-teal-400">${h.ticker.replace(".NS", "")}</td>
+                            <td class="font-semibold">${h.shares}</td>
+                            <td class="text-gray-400">₹${h.avg_buy_price.toFixed(2)}</td>
+                            <td class="text-gray-200">₹${h.current_value.toFixed(2)}</td>
+                            <td class="font-bold ${positionColorClass}">₹${totalProfitLoss.toFixed(2)}</td>
+                            <td class="py-4 text-right pr-4">
+                                <div class="flex gap-2 justify-end items-center">
+                                    <input type="number" id="sell-qty-${h.ticker.replace(".", "-")}" value="${h.shares}" min="1" max="${h.shares}" class="w-16 p-1 rounded bg-gray-900 text-center font-mono text-white text-xs border border-gray-700 focus:outline-none">
+                                    <button onclick="executePortfolioSell('${h.ticker}', 'sell-qty-${h.ticker.replace(".", "-")}')" class="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 px-3 py-1 rounded text-xs font-bold transition">Liquidate</button>
+                                </div>
+                            </td>
+                        </tr>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function fetchAndRenderHistory() {
+            try {
+                const res = await fetch(`${API_URL}/history`);
+                const history = await res.json();
+                const tbody = document.getElementById("history-table-body");
+                tbody.innerHTML = "";
+
+                if(history.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 py-8 text-sm font-sans">No logs found.</td></tr>`;
+                    return;
+                }
+
+                history.forEach(log => {
+                    const typeBadge = log.action === 'BUY' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30';
+                    tbody.innerHTML += `
+                        <tr class="border-b border-gray-800/60 hover:bg-gray-800/20 transition">
+                            <td class="py-3 pl-2 text-gray-400">${log.time}</td>
+                            <td class="font-bold text-gray-200 font-sans">${log.ticker.replace(".NS", "")}</td>
+                            <td><span class="px-2 py-0.5 rounded text-xs font-bold ${typeBadge}">${log.action}</span></td>
+                            <td class="font-semibold">${log.shares}</td>
+                            <td class="text-right pr-4 font-bold text-gray-300">₹${log.price.toFixed(2)}</td>
+                        </tr>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function addMoneyPrompt() {
+            const amount = prompt("Capital inject size (₹):");
+            if (!amount || isNaN(amount) || amount <= 0) return;
+            await fetch(`${API_URL}/add-money`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ amount })
+            });
+            refreshData();
+        }
+
+        function logout() { localStorage.clear(); navigateToLanding(); }
+    </script>
+</body>
+</html>
