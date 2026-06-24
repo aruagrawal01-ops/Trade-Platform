@@ -5,7 +5,7 @@ import yfinance as yf
 from pandas import MultiIndex
 
 app = Flask(__name__)
-CORS(app) 
+CORS(app, resources={r"/api/*": {"origins": ["https://aruagrawal01-ops.github.io"]}})
 
 # Connect to your local PostgreSQL database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:DATA_BASE_PASSWORD@localhost:5432/DATABASE_NAME'
