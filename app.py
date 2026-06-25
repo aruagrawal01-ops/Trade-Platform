@@ -22,6 +22,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
+# 🛠️ PRODUCTION BOOT TRIGGER: This ensures tables are verified/created under Gunicorn deployment 
+with app.app_context():
+    db.create_all()
+
 NIFTY_50_TICKERS = [
     "RELIANCE.NS", "HDFCBANK.NS", "BHARTIARTL.NS", "ICICIBANK.NS", "SBIN.NS", 
     "TCS.NS", "BAJFINANCE.NS", "LT.NS", "LICI.NS", "HINDUNILVR.NS", 
@@ -62,7 +66,6 @@ def get_dashboard():
     global PRICE_CACHE
     current_user = User.query.first()
     
-    # Initialize values safely up front to absolute zero out any unbound variables
     portfolio = {}
     open_trades = 0
     user_balance = 100000.00
@@ -193,6 +196,7 @@ def add_money():
     db.session.commit()
     return jsonify({'message': 'Success', 'balance': current_user.balance})
 
+@app.key = 'portfolio'
 @app.route('/api/portfolio', methods=['GET'])
 def get_portfolio():
     global PRICE_CACHE
@@ -250,7 +254,5 @@ def get_history():
     return jsonify(history_data)
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     port = int(os.environ.get("PORT", 5001))
     app.run(host="0.0.0.0", port=port)
