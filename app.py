@@ -63,8 +63,26 @@ def login():
 def get_dashboard():
     global PRICE_CACHE
     current_user = User.query.first()
+    
+    # --- 🛠️ ANONYMOUS VISITOR SAFE-GUARD PATCH ---
+    # Instead of breaking with a 404 if no users exist, seed dummy metrics so the page loads cleanly!
     if not current_user:
-        return jsonify({'message': 'No users exist yet'}), 404
+        user_balance = 100000.00
+        portfolio_value = 0.00
+        open_trades = 0
+    else:
+        user_balance = current_user.balance
+        open_trades = 0
+        # Check active holding patterns if a profile exists
+        try:
+            txs = Transaction.query.filter_by(user_id=current_user.id).all()
+            portfolio = {}
+            for tx in txs:
+                portfolio[tx.ticker] = portfolio.get(tx.ticker, 0) + tx.shares
+            portfolio = {k: v for k, v in portfolio.items() if v > 0}
+            open_trades = len(portfolio)
+        except:
+            portfolio = {}
 
     tickers_str = " ".join(NIFTY_50_TICKERS)
     data = yf.download(tickers_str, period="1d", group_by='ticker', progress=False)
@@ -104,21 +122,15 @@ def get_dashboard():
                 fallback_p = PRICE_CACHE.get(ticker, 0.0)
                 stocks_list.append({'ticker': ticker, 'price': fallback_p, 'high': fallback_p, 'low': fallback_p, 'open': fallback_p})
 
-    txs = Transaction.query.filter_by(user_id=current_user.id).all()
-    portfolio = {}
-    for tx in txs:
-        portfolio[tx.ticker] = portfolio.get(tx.ticker, 0) + tx.shares
-    
-    portfolio = {k: v for k, v in portfolio.items() if v > 0}
+    # Recalculate live evaluation values if positions are open
     portfolio_value = 0
-    open_trades = len(portfolio)
-    
-    for ticker, shares in portfolio.items():
-        live_p = PRICE_CACHE.get(ticker, 0.0)
-        portfolio_value += live_p * shares
+    if current_user and portfolio:
+        for ticker, shares in portfolio.items():
+            live_p = PRICE_CACHE.get(ticker, 0.0)
+            portfolio_value += live_p * shares
 
     return jsonify({
-        'balance': round(current_user.balance, 2),
+        'balance': round(user_balance, 2),
         'portfolio_value': round(portfolio_value, 2),
         'open_trades': open_trades,
         'stocks': stocks_list
