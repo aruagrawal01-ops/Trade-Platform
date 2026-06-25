@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from models import db, User, Transaction
@@ -5,10 +6,23 @@ import yfinance as yf
 from pandas import MultiIndex
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": ["https://stoqnest.vercel.app/"]}})
 
-# Connect to your local PostgreSQL database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:DATA_BASE_PASSWORD@localhost:5432/DATABASE_NAME'
+# Updated CORS: Handles Vercel with clean wildcard endpoints mapping securely
+CORS(app, resources={r"/api/*": {"origins": ["https://stoqnest.vercel.app"]}})
+
+# --- 🔐 PRODUCTION DATABASE CONFIGURATION LAYER ---
+# Dynamically pulls your live Supabase URL string from Render Environment Variables
+db_uri = os.environ.get("DATABASE_URL")
+
+# Clean up 'postgres://' mismatch if provided by legacy string outputs
+if db_uri and db_uri.startswith("postgres://"):
+    db_uri = db_uri.replace("postgres://", "postgresql://", 1)
+
+# Fail-safe backup check to prevent localhost fallback loops
+if not db_uri:
+    raise ValueError("CRITICAL: DATABASE_URL environment variable is missing on Render!")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
@@ -25,7 +39,6 @@ NIFTY_50_TICKERS = [
     "ADANIENSOL.NS", "SBILIFE.NS", "VBL.NS", "VEDL.NS"
 ]
 
-# 🛠️ MEMORY CACHE MATRIX: Keeps trades lightning fast without choking network threads
 PRICE_CACHE = {}
 
 @app.route('/api/register', methods=['POST'])
@@ -66,7 +79,7 @@ def get_dashboard():
             open_price = ticker_data['Open'].dropna().iloc[0]
             
             price_val = round(float(current_price), 2)
-            PRICE_CACHE[ticker] = price_val  # Save to internal memory cache
+            PRICE_CACHE[ticker] = price_val  
             
             stocks_list.append({
                 'ticker': ticker,
@@ -79,7 +92,7 @@ def get_dashboard():
             try:
                 info = yf.Ticker(ticker).fast_info
                 price_val = round(info['last_price'], 2)
-                PRICE_CACHE[ticker] = price_val  # Save to internal memory cache
+                PRICE_CACHE[ticker] = price_val  
                 stocks_list.append({
                     'ticker': ticker,
                     'price': price_val,
@@ -133,7 +146,6 @@ def trade_stock():
     shares = int(data['shares'])
     action = data['action']
     
-    # 🛠️ INSTANT EXECUTION: Read from high-speed memory cache instead of slow web calls
     live_price = PRICE_CACHE.get(ticker, 0.0)
     if live_price == 0.0:
         try:
@@ -218,7 +230,10 @@ def get_history():
         })
     return jsonify(history_data)
 
+# --- 🚀 RUN COMMAND CONFIGURATION MATRIX ---
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, port=5001)
+    # Dynamic port fallback execution for Render's routing layers
+    port = int(os.environ.get("PORT", 5001))
+    app.run(host="0.0.0.0", port=port)
