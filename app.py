@@ -11,14 +11,11 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": ["https://stoqnest.vercel.app"]}})
 
 # --- 🔐 PRODUCTION DATABASE CONFIGURATION LAYER ---
-# Dynamically pulls your live Supabase URL string from Render Environment Variables
 db_uri = os.environ.get("DATABASE_URL")
 
-# Clean up 'postgres://' mismatch if provided by legacy string outputs
 if db_uri and db_uri.startswith("postgres://"):
     db_uri = db_uri.replace("postgres://", "postgresql://", 1)
 
-# Fail-safe backup check to prevent localhost fallback loops
 if not db_uri:
     raise ValueError("CRITICAL: DATABASE_URL environment variable is missing on Render!")
 
@@ -64,19 +61,17 @@ def get_dashboard():
     global PRICE_CACHE
     current_user = User.query.first()
     
-    # --- 🛠️ ANONYMOUS VISITOR SAFE-GUARD PATCH ---
-    # Instead of breaking with a 404 if no users exist, seed dummy metrics so the page loads cleanly!
+    # Initialize variables up front to completely eliminate UnboundLocalError risks
+    portfolio = {}
+    open_trades = 0
+    
     if not current_user:
         user_balance = 100000.00
         portfolio_value = 0.00
-        open_trades = 0
     else:
         user_balance = current_user.balance
-        open_trades = 0
-        # Check active holding patterns if a profile exists
         try:
             txs = Transaction.query.filter_by(user_id=current_user.id).all()
-            portfolio = {}
             for tx in txs:
                 portfolio[tx.ticker] = portfolio.get(tx.ticker, 0) + tx.shares
             portfolio = {k: v for k, v in portfolio.items() if v > 0}
@@ -122,8 +117,8 @@ def get_dashboard():
                 fallback_p = PRICE_CACHE.get(ticker, 0.0)
                 stocks_list.append({'ticker': ticker, 'price': fallback_p, 'high': fallback_p, 'low': fallback_p, 'open': fallback_p})
 
-    # Recalculate live evaluation values if positions are open
-    portfolio_value = 0
+    # Fixed execution validation gate block: Safely steps around null users
+    portfolio_value = 0.00
     if current_user and portfolio:
         for ticker, shares in portfolio.items():
             live_p = PRICE_CACHE.get(ticker, 0.0)
@@ -196,6 +191,9 @@ def add_money():
 def get_portfolio():
     global PRICE_CACHE
     current_user = User.query.first()
+    if not current_user:
+        return jsonify({'holdings': [], 'total_invested': 0.00})
+        
     txs = Transaction.query.filter_by(user_id=current_user.id).all()
     holdings = {}
     for tx in txs:
@@ -230,6 +228,9 @@ def get_portfolio():
 @app.route('/api/history', methods=['GET'])
 def get_history():
     current_user = User.query.first()
+    if not current_user:
+        return jsonify([])
+        
     txs = Transaction.query.filter_by(user_id=current_user.id).order_by(Transaction.timestamp.desc()).all()
     history_data = []
     for tx in txs:
@@ -242,10 +243,8 @@ def get_history():
         })
     return jsonify(history_data)
 
-# --- 🚀 RUN COMMAND CONFIGURATION MATRIX ---
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    # Dynamic port fallback execution for Render's routing layers
     port = int(os.environ.get("PORT", 5001))
     app.run(host="0.0.0.0", port=port)
