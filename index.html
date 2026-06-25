@@ -317,14 +317,15 @@
             const password = document.getElementById("password").value.trim();
             if(!username || !password) return alert("Please fill out parameters.");
 
-            // DECOUPLED ROUTER BUGFIX MATRIX: Overrides sliding header string context bugs
-            let trueEndpoint = authActionType;
+            // --- ⚙️ BULLETPROOF ENDPOINT ROUTER ---
+            // If the modal text says "Create Free Account", explicitly force the signup path
+            let targetAction = "login";
             if (document.getElementById("auth-title").innerText === "Create Free Account") {
-                trueEndpoint = "register";
+                targetAction = "register";
             }
 
             try {
-                const res = await fetch(`${API_URL}/${trueEndpoint}`, {
+                const res = await fetch(`${API_URL}/${targetAction}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username, password })
