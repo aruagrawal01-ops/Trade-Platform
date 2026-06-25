@@ -44,7 +44,6 @@
                     Build your wealth management strategies with actual, dynamic Indian stock updates. Experience zero financial liability, full market depth execution, and live position charting metrics.
                 </p>
                 <div class="pt-2 flex items-center gap-4">
-                    <!-- FIXED MISTAKE HERE: Added 'register' string parameter argument directly below -->
                     <button onclick="showAuthModal('register')" class="bg-teal-400 hover:bg-teal-300 text-gray-900 font-bold px-8 py-4 rounded-xl shadow-xl shadow-teal-400/20 transition-all transform hover:-translate-y-0.5">Start Trading Free</button>
                     <div class="text-xs text-gray-500 font-mono space-y-0.5 border-l border-gray-800 pl-4">
                         <div>⚡ YFinance Feed Connection</div>
@@ -318,8 +317,14 @@
             const password = document.getElementById("password").value.trim();
             if(!username || !password) return alert("Please fill out parameters.");
 
+            // DECOUPLED ROUTER BUGFIX MATRIX: Overrides sliding header string context bugs
+            let trueEndpoint = authActionType;
+            if (document.getElementById("auth-title").innerText === "Create Free Account") {
+                trueEndpoint = "register";
+            }
+
             try {
-                const res = await fetch(`${API_URL}/${authActionType}`, {
+                const res = await fetch(`${API_URL}/${trueEndpoint}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username, password })
