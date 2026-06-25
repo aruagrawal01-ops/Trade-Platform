@@ -122,7 +122,8 @@
                 <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Password</label>
                 <input type="password" id="password" class="w-full p-3 rounded-xl bg-gray-900 border border-gray-700 focus:outline-none focus:border-teal-400 font-medium font-mono text-white">
             </div>
-            <button onclick="executeAuthentication()" id="auth-submit-btn" class="w-full bg-teal-400 hover:bg-teal-300 text-gray-900 py-3.5 rounded-xl font-bold transition shadow-xl"></button>
+            <!-- Handlers assigned dynamically inside showAuthModal() script section -->
+            <button id="auth-submit-btn" class="w-full bg-teal-400 hover:bg-teal-300 text-gray-900 py-3.5 rounded-xl font-bold transition shadow-xl"></button>
         </div>
     </div>
 
@@ -266,8 +267,6 @@
     </div>
 
     <script>
-        // --- FIXED INITIAL STATE PARSING LOOP MAPPING ---
-        // Checks safely for local mock variables to step around null response errors on mount
         const API_URL = "https://stoqnest.onrender.com/api"; 
         let activeTicker = null;
         let chartInstance = null; 
@@ -286,7 +285,6 @@
         };
 
         window.onload = () => {
-            // Safe initial validation mount trigger
             refreshData().then(() => {
                 if (localStorage.getItem("token")) showWorkspace();
                 else navigateToLanding();
@@ -310,27 +308,31 @@
             refreshInterval = setInterval(refreshData, 10000); 
         }
 
+        // --- 🛠️ DECOUPLED EXPLICIT AUTH BOUNDARY INITIALIZATION MATRIX ---
         function showAuthModal(type) {
-            authActionType = type;
+            authActionType = type; 
             document.getElementById("auth-modal").classList.remove("hidden");
-            document.getElementById("auth-title").innerText = type === 'login' ? "Login to Workspace" : "Create Free Account";
-            document.getElementById("auth-submit-btn").innerText = type === 'login' ? "Access Environment" : "Complete Registration";
+            
+            if (type === 'login') {
+                document.getElementById("auth-title").innerText = "Login to Workspace";
+                document.getElementById("auth-submit-btn").innerText = "Access Environment";
+                document.getElementById("auth-submit-btn").onclick = executeLogin;
+            } else {
+                document.getElementById("auth-title").innerText = "Create Free Account";
+                document.getElementById("auth-submit-btn").innerText = "Complete Registration";
+                document.getElementById("auth-submit-btn").onclick = executeRegistration;
+            }
         }
 
         function closeAuthModal() { document.getElementById("auth-modal").classList.add("hidden"); }
 
-        async function executeAuthentication() {
+        async function executeLogin() {
             const username = document.getElementById("username").value.trim();
             const password = document.getElementById("password").value.trim();
             if(!username || !password) return alert("Please fill out parameters.");
 
-            let targetAction = "login";
-            if (document.getElementById("auth-title").innerText === "Create Free Account") {
-                targetAction = "register";
-            }
-
             try {
-                const res = await fetch(`${API_URL}/${targetAction}`, {
+                const res = await fetch(`${API_URL}/login`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username, password })
@@ -339,7 +341,29 @@
                     closeAuthModal();
                     localStorage.setItem("token", "BypassToken_Success");
                     showWorkspace();
-                } else { alert("Authentication failed. Please verify credentials."); }
+                } else { alert("Login failed. Please verify credentials."); }
+            } catch (err) { alert("Server connectivity disconnect."); }
+        }
+
+        async function executeRegistration() {
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+            if(!username || !password) return alert("Please fill out parameters.");
+
+            try {
+                const res = await fetch(`${API_URL}/register`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+                if (res.ok) {
+                    closeAuthModal();
+                    localStorage.setItem("token", "BypassToken_Success");
+                    showWorkspace();
+                } else { 
+                    const errData = await res.json();
+                    alert(errData.message || "Registration failed."); 
+                }
             } catch (err) { alert("Server connectivity disconnect."); }
         }
 
@@ -409,7 +433,6 @@
                 const res = await fetch(`${API_URL}/dashboard`);
                 const data = await res.json();
                 
-                // Safe lookup mappings: Fallback strings ensure rendering remains consistent
                 if (data && data.balance !== undefined) {
                     document.getElementById("hdr-balance").innerText = `₹${data.balance.toLocaleString()}`;
                     document.getElementById("hdr-portfolio").innerText = `₹${data.portfolio_value.toLocaleString()}`;
