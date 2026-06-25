@@ -3,11 +3,10 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from models import db, User, Transaction
 import yfinance as yf
-from pandas import MultiIndex
 
 app = Flask(__name__)
 
-# Updated CORS: Handles Vercel with clean wildcard endpoints mapping securely
+# Configured CORS: Seamless communication channel matching your production link
 CORS(app, resources={r"/api/*": {"origins": ["https://stoqnest.vercel.app"]}})
 
 # --- 🔐 PRODUCTION DATABASE CONFIGURATION LAYER ---
@@ -41,6 +40,8 @@ PRICE_CACHE = {}
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.json
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({'message': 'Missing fields'}), 400
     if User.query.filter_by(username=data['username']).first():
         return jsonify({'message': 'Username already exists'}), 400
     new_user = User(username=data['username'], password_hash=data['password'])
@@ -61,14 +62,13 @@ def get_dashboard():
     global PRICE_CACHE
     current_user = User.query.first()
     
-    # Initialize variables up front to completely eliminate UnboundLocalError risks
+    # Initialize values safely up front to absolute zero out any unbound variables
     portfolio = {}
     open_trades = 0
+    user_balance = 100000.00
+    portfolio_value = 0.00
     
-    if not current_user:
-        user_balance = 100000.00
-        portfolio_value = 0.00
-    else:
+    if current_user:
         user_balance = current_user.balance
         try:
             txs = Transaction.query.filter_by(user_id=current_user.id).all()
@@ -79,8 +79,11 @@ def get_dashboard():
         except:
             portfolio = {}
 
-    tickers_str = " ".join(NIFTY_50_TICKERS)
-    data = yf.download(tickers_str, period="1d", group_by='ticker', progress=False)
+    try:
+        tickers_str = " ".join(NIFTY_50_TICKERS)
+        data = yf.download(tickers_str, period="1d", group_by='ticker', progress=False)
+    except:
+        data = {}
     
     stocks_list = []
     for ticker in NIFTY_50_TICKERS:
@@ -117,8 +120,6 @@ def get_dashboard():
                 fallback_p = PRICE_CACHE.get(ticker, 0.0)
                 stocks_list.append({'ticker': ticker, 'price': fallback_p, 'high': fallback_p, 'low': fallback_p, 'open': fallback_p})
 
-    # Fixed execution validation gate block: Safely steps around null users
-    portfolio_value = 0.00
     if current_user and portfolio:
         for ticker, shares in portfolio.items():
             live_p = PRICE_CACHE.get(ticker, 0.0)
@@ -148,6 +149,9 @@ def get_stock_chart(ticker):
 def trade_stock():
     global PRICE_CACHE
     current_user = User.query.first()
+    if not current_user:
+        return jsonify({'message': 'No user active to perform trades'}), 400
+        
     data = request.json
     ticker = data['ticker']
     shares = int(data['shares'])
@@ -158,7 +162,7 @@ def trade_stock():
         try:
             live_price = yf.Ticker(ticker).fast_info['last_price']
         except:
-            return jsonify({'message': 'Market feed sync pending. Try again in a moment.'}), 400
+            return jsonify({'message': 'Market feed sync pending. Try again.'}), 400
             
     total_cost = live_price * shares
 
@@ -182,6 +186,8 @@ def trade_stock():
 @app.route('/api/add-money', methods=['POST'])
 def add_money():
     current_user = User.query.first()
+    if not current_user:
+        return jsonify({'message': 'No profile initialized'}), 400
     amount = float(request.json.get('amount', 0))
     current_user.balance += amount
     db.session.commit()
