@@ -56,6 +56,35 @@ except Exception as exc:  # noqa: BLE001
     # the DB (e.g. the stock chart endpoint) - surface it per-request instead.
     app.logger.error(f"Database initialization failed: {exc}")
 
+@app.route('/api/_debug_yf', methods=['GET'])
+def debug_yf():
+    # TEMPORARY: remove once the Vercel yfinance connectivity issue is confirmed fixed.
+    import time
+    result = {}
+    start = time.time()
+    try:
+        info = yf.Ticker("RELIANCE.NS").fast_info
+        result['fast_info_ok'] = True
+        result['fast_info_price'] = info.get('last_price')
+    except Exception as exc:  # noqa: BLE001
+        result['fast_info_ok'] = False
+        result['fast_info_error_type'] = type(exc).__name__
+        result['fast_info_error'] = str(exc)
+    result['fast_info_seconds'] = round(time.time() - start, 2)
+
+    start2 = time.time()
+    try:
+        hist = yf.Ticker("RELIANCE.NS").history(period="1d")
+        result['history_ok'] = not hist.empty
+        result['history_rows'] = len(hist)
+    except Exception as exc:  # noqa: BLE001
+        result['history_ok'] = False
+        result['history_error_type'] = type(exc).__name__
+        result['history_error'] = str(exc)
+    result['history_seconds'] = round(time.time() - start2, 2)
+
+    return jsonify(result)
+
 @app.route('/api/_debug_db', methods=['GET'])
 def debug_db():
     # TEMPORARY: remove once the Vercel/Neon connection issue is confirmed fixed.
