@@ -56,6 +56,25 @@ except Exception as exc:  # noqa: BLE001
     # the DB (e.g. the stock chart endpoint) - surface it per-request instead.
     app.logger.error(f"Database initialization failed: {exc}")
 
+@app.route('/api/_debug_db', methods=['GET'])
+def debug_db():
+    # TEMPORARY: remove once the Vercel/Neon connection issue is confirmed fixed.
+    info = {
+        'database_url_set': bool(os.environ.get('DATABASE_URL')),
+        'database_url_host': urlsplit(app.config['SQLALCHEMY_DATABASE_URI']).hostname,
+        'database_url_scheme': urlsplit(app.config['SQLALCHEMY_DATABASE_URI']).scheme,
+    }
+    try:
+        from sqlalchemy import text
+        with app.app_context():
+            db.session.execute(text('SELECT 1'))
+        info['connection'] = 'ok'
+    except Exception as exc:  # noqa: BLE001
+        info['connection'] = 'failed'
+        info['error_type'] = type(exc).__name__
+        info['error'] = str(exc)
+    return jsonify(info)
+
 NIFTY_50_TICKERS = [
     "RELIANCE.NS", "HDFCBANK.NS", "BHARTIARTL.NS", "ICICIBANK.NS", "SBIN.NS", 
     "TCS.NS", "BAJFINANCE.NS", "LT.NS", "LICI.NS", "HINDUNILVR.NS", 
