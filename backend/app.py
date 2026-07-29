@@ -1,4 +1,6 @@
 import os
+import ssl
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from models import db, User, Transaction
@@ -21,18 +23,38 @@ if database_url.startswith('postgresql://'):
 elif database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql+pg8000://', 1)
 
+# Hosted providers like Neon put libpq-style params (sslmode, channel_binding)
+# in the URL. pg8000's driver doesn't accept those as connect kwargs and
+# raises immediately, so strip them and configure TLS via connect_args below.
+using_pg8000 = 'pg8000' in database_url
+if using_pg8000:
+    parts = urlsplit(database_url)
+    filtered_query = [
+        (k, v) for k, v in parse_qsl(parts.query)
+        if k not in ('sslmode', 'channel_binding')
+    ]
+    database_url = urlunsplit(parts._replace(query=urlencode(filtered_query)))
+
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Serverless functions are short-lived, so verify connections before reuse
 # and don't hold onto ones that outlive the function instance.
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+engine_options = {
     'pool_pre_ping': True,
     'pool_recycle': 280,
 }
+if using_pg8000 and 'localhost' not in database_url and '127.0.0.1' not in database_url:
+    engine_options['connect_args'] = {'ssl_context': ssl.create_default_context()}
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_options
 db.init_app(app)
 
-with app.app_context():
-    db.create_all()
+try:
+    with app.app_context():
+        db.create_all()
+except Exception as exc:  # noqa: BLE001
+    # Don't let a DB outage/misconfiguration take down routes that don't need
+    # the DB (e.g. the stock chart endpoint) - surface it per-request instead.
+    app.logger.error(f"Database initialization failed: {exc}")
 
 NIFTY_50_TICKERS = [
     "RELIANCE.NS", "HDFCBANK.NS", "BHARTIARTL.NS", "ICICIBANK.NS", "SBIN.NS", 
