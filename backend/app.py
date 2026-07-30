@@ -6,7 +6,6 @@ from flask_cors import CORS
 from models import db, User, Transaction
 from auth import generate_token, token_required
 import yfinance as yf
-from pandas import MultiIndex
 
 app = Flask(__name__)
 CORS(app)
@@ -55,54 +54,6 @@ except Exception as exc:  # noqa: BLE001
     # Don't let a DB outage/misconfiguration take down routes that don't need
     # the DB (e.g. the stock chart endpoint) - surface it per-request instead.
     app.logger.error(f"Database initialization failed: {exc}")
-
-@app.route('/api/_debug_yf', methods=['GET'])
-def debug_yf():
-    # TEMPORARY: remove once the Vercel yfinance connectivity issue is confirmed fixed.
-    import time
-    result = {}
-    start = time.time()
-    try:
-        info = yf.Ticker("RELIANCE.NS").fast_info
-        result['fast_info_ok'] = True
-        result['fast_info_price'] = info.get('last_price')
-    except Exception as exc:  # noqa: BLE001
-        result['fast_info_ok'] = False
-        result['fast_info_error_type'] = type(exc).__name__
-        result['fast_info_error'] = str(exc)
-    result['fast_info_seconds'] = round(time.time() - start, 2)
-
-    start2 = time.time()
-    try:
-        hist = yf.Ticker("RELIANCE.NS").history(period="1d")
-        result['history_ok'] = not hist.empty
-        result['history_rows'] = len(hist)
-    except Exception as exc:  # noqa: BLE001
-        result['history_ok'] = False
-        result['history_error_type'] = type(exc).__name__
-        result['history_error'] = str(exc)
-    result['history_seconds'] = round(time.time() - start2, 2)
-
-    return jsonify(result)
-
-@app.route('/api/_debug_db', methods=['GET'])
-def debug_db():
-    # TEMPORARY: remove once the Vercel/Neon connection issue is confirmed fixed.
-    info = {
-        'database_url_set': bool(os.environ.get('DATABASE_URL')),
-        'database_url_host': urlsplit(app.config['SQLALCHEMY_DATABASE_URI']).hostname,
-        'database_url_scheme': urlsplit(app.config['SQLALCHEMY_DATABASE_URI']).scheme,
-    }
-    try:
-        from sqlalchemy import text
-        with app.app_context():
-            db.session.execute(text('SELECT 1'))
-        info['connection'] = 'ok'
-    except Exception as exc:  # noqa: BLE001
-        info['connection'] = 'failed'
-        info['error_type'] = type(exc).__name__
-        info['error'] = str(exc)
-    return jsonify(info)
 
 NIFTY_50_TICKERS = [
     "RELIANCE.NS", "HDFCBANK.NS", "BHARTIARTL.NS", "ICICIBANK.NS", "SBIN.NS", 
