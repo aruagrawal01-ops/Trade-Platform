@@ -134,6 +134,8 @@
                     <button onclick="navigateTo('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-md font-medium text-sm transition bg-teal-500 text-white">Market Dashboard</button>
                     <button onclick="navigateTo('portfolio')" id="nav-portfolio" class="px-4 py-2 rounded-md font-medium text-sm transition text-gray-300 hover:bg-gray-700">My Portfolio</button>
                     <button onclick="navigateTo('history')" id="nav-history" class="px-4 py-2 rounded-md font-medium text-sm transition text-gray-300 hover:bg-gray-700">Order Logs</button>
+                    <button onclick="navigateTo('leaderboard')" id="nav-leaderboard" class="px-4 py-2 rounded-md font-medium text-sm transition text-gray-300 hover:bg-gray-700">Leaderboard</button>
+                    <button onclick="navigateTo('automation')" id="nav-automation" class="px-4 py-2 rounded-md font-medium text-sm transition text-gray-300 hover:bg-gray-700">Automation</button>
                 </nav>
             </div>
             <div class="flex gap-6 text-sm items-center bg-gray-900/60 px-4 py-2 rounded-lg border border-gray-700">
@@ -141,9 +143,12 @@
                 <div>Portfolio Value: <span id="hdr-portfolio" class="font-bold text-blue-400 font-mono">₹0</span></div>
                 <div>Open Trades: <span id="hdr-trades" class="font-bold text-yellow-400 font-mono">0</span></div>
                 <button onclick="addMoneyPrompt()" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded text-xs font-bold transition">+ Add Funds</button>
+                <button onclick="showSettingsModal()" title="Change Password" class="bg-gray-700 hover:bg-gray-600 w-7 h-7 flex items-center justify-center rounded text-xs transition">⚙</button>
                 <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-xs transition">Exit</button>
             </div>
         </header>
+
+        <div id="toast-container" class="fixed top-24 right-4 z-50 flex flex-col gap-2 w-80"></div>
 
         <main id="view-dashboard" class="flex-1 p-6 flex flex-col page-view max-h-[88vh]">
             <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-4 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -263,6 +268,92 @@
                 </div>
             </div>
         </main>
+
+        <main id="view-leaderboard" class="hidden flex-1 p-6 page-view overflow-y-auto">
+            <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 min-h-[75vh] flex flex-col">
+                <h2 class="text-2xl font-bold text-teal-400 mb-6 flex items-center gap-2">🏆 Trader Leaderboard</h2>
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-700 text-gray-400 text-sm">
+                                <th class="pb-3 pl-2">Rank</th>
+                                <th class="pb-3">Trader</th>
+                                <th class="pb-3">Balance</th>
+                                <th class="pb-3">Portfolio Value</th>
+                                <th class="pb-3">Net Worth</th>
+                                <th class="pb-3 pr-4 text-right">P&L (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-table-body" class="divide-y divide-gray-800 font-mono text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <main id="view-automation" class="hidden flex-1 p-6 page-view overflow-y-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 flex flex-col">
+                    <h2 class="text-xl font-bold text-teal-400 mb-1 flex items-center gap-2">🔔 Price Alerts</h2>
+                    <p class="text-xs text-gray-400 mb-4">Get notified when a stock crosses your target price. Checked whenever the app refreshes prices.</p>
+                    <div class="bg-gray-900/40 p-4 rounded-lg border border-gray-700/60 mb-4 space-y-3">
+                        <select id="alert-ticker" class="w-full p-2.5 rounded-lg bg-gray-900 text-white border border-gray-700 text-sm font-mono focus:outline-none focus:border-teal-400"></select>
+                        <div class="flex gap-2">
+                            <select id="alert-direction" class="flex-1 p-2.5 rounded-lg bg-gray-900 text-white border border-gray-700 text-sm focus:outline-none focus:border-teal-400">
+                                <option value="above">Price goes above</option>
+                                <option value="below">Price goes below</option>
+                            </select>
+                            <input type="number" id="alert-target-price" placeholder="Target ₹" min="0" step="0.01" class="w-32 p-2.5 rounded-lg bg-gray-900 text-white border border-gray-700 text-sm font-mono focus:outline-none focus:border-teal-400">
+                        </div>
+                        <button onclick="createAlert()" class="w-full bg-teal-500 hover:bg-teal-400 text-gray-900 font-bold py-2.5 rounded-lg text-sm transition">Create Alert</button>
+                    </div>
+                    <div id="alerts-list" class="space-y-2 overflow-y-auto max-h-[40vh]"></div>
+                </div>
+
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 flex flex-col">
+                    <h2 class="text-xl font-bold text-teal-400 mb-1 flex items-center gap-2">🤖 Auto Orders</h2>
+                    <p class="text-xs text-gray-400 mb-4">Automatically BUY or SELL when a price target is hit. Only fires while you have the app open in a browser tab (checked every 10s).</p>
+                    <div class="bg-gray-900/40 p-4 rounded-lg border border-gray-700/60 mb-4 space-y-3">
+                        <select id="order-ticker" class="w-full p-2.5 rounded-lg bg-gray-900 text-white border border-gray-700 text-sm font-mono focus:outline-none focus:border-teal-400"></select>
+                        <div class="flex gap-2">
+                            <select id="order-direction" class="flex-1 p-2.5 rounded-lg bg-gray-900 text-white border border-gray-700 text-sm focus:outline-none focus:border-teal-400">
+                                <option value="above">Price goes above</option>
+                                <option value="below">Price goes below</option>
+                            </select>
+                            <input type="number" id="order-target-price" placeholder="Target ₹" min="0" step="0.01" class="w-28 p-2.5 rounded-lg bg-gray-900 text-white border border-gray-700 text-sm font-mono focus:outline-none focus:border-teal-400">
+                        </div>
+                        <div class="flex gap-2">
+                            <select id="order-action" class="flex-1 p-2.5 rounded-lg bg-gray-900 text-white border border-gray-700 text-sm focus:outline-none focus:border-teal-400">
+                                <option value="BUY">then BUY</option>
+                                <option value="SELL">then SELL</option>
+                            </select>
+                            <input type="number" id="order-shares" placeholder="Shares" min="1" value="1" class="w-24 p-2.5 rounded-lg bg-gray-900 text-white border border-gray-700 text-sm font-mono focus:outline-none focus:border-teal-400">
+                        </div>
+                        <button onclick="createAutoOrder()" class="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-2.5 rounded-lg text-sm transition">Create Auto Order</button>
+                    </div>
+                    <div id="auto-orders-list" class="space-y-2 overflow-y-auto max-h-[40vh]"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-gray-850 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700 relative">
+            <button onclick="closeSettingsModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl transition">&times;</button>
+            <h2 class="text-2xl font-black mb-6 text-center text-teal-400 tracking-tight">Change Password</h2>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Current Password</label>
+                <input type="password" id="current-password" class="w-full p-3 rounded-xl bg-gray-900 border border-gray-700 focus:outline-none focus:border-teal-400 font-medium font-mono text-white">
+            </div>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">New Password</label>
+                <input type="password" id="new-password" class="w-full p-3 rounded-xl bg-gray-900 border border-gray-700 focus:outline-none focus:border-teal-400 font-medium font-mono text-white">
+            </div>
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Confirm New Password</label>
+                <input type="password" id="confirm-password" class="w-full p-3 rounded-xl bg-gray-900 border border-gray-700 focus:outline-none focus:border-teal-400 font-medium font-mono text-white">
+            </div>
+            <button onclick="submitChangePassword()" class="w-full bg-teal-400 hover:bg-teal-300 text-gray-900 py-3.5 rounded-xl font-bold transition shadow-xl">Update Password</button>
+        </div>
     </div>
 
     <script>
@@ -401,6 +492,39 @@
             
             if (targetView === 'portfolio') fetchAndRenderPortfolio();
             if (targetView === 'history') fetchAndRenderHistory();
+            if (targetView === 'leaderboard') fetchAndRenderLeaderboard();
+            if (targetView === 'automation') {
+                populateTickerSelects();
+                fetchAndRenderAlerts();
+                fetchAndRenderAutoOrders();
+            }
+        }
+
+        function showToast(message, tone = 'info') {
+            const toneClass = {
+                info: 'border-teal-500/40 text-teal-300',
+                success: 'border-green-500/40 text-green-300',
+                error: 'border-red-500/40 text-red-300'
+            }[tone] || 'border-teal-500/40 text-teal-300';
+
+            const el = document.createElement('div');
+            el.className = `bg-gray-850 border ${toneClass} p-3 rounded-lg shadow-xl text-sm font-medium animate-[flashGreen_1s_ease-out]`;
+            el.style.background = '#1f2937';
+            el.innerText = message;
+            document.getElementById("toast-container").appendChild(el);
+            setTimeout(() => el.remove(), 6000);
+        }
+
+        function populateTickerSelects() {
+            if (globalStocksCache.length === 0) return;
+            ['alert-ticker', 'order-ticker'].forEach(id => {
+                const select = document.getElementById(id);
+                const previousValue = select.value;
+                select.innerHTML = globalStocksCache
+                    .map(s => `<option value="${s.ticker}">${s.ticker.replace('.NS', '')} (₹${s.price.toFixed(2)})</option>`)
+                    .join('');
+                if (previousValue) select.value = previousValue;
+            });
         }
 
         async function refreshData() {
@@ -414,9 +538,25 @@
                 document.getElementById("hdr-trades").innerText = data.open_trades;
 
                 globalStocksCache = data.stocks || [];
-                filterMarkets(); 
+                filterMarkets();
                 renderWatchlist();
-                
+
+                (data.triggered_alerts || []).forEach(a => {
+                    const dir = a.direction === 'above' ? 'rose above' : 'fell below';
+                    showToast(`🔔 ${a.ticker.replace('.NS', '')} ${dir} ₹${a.target_price} (now ₹${a.price.toFixed(2)})`, 'info');
+                });
+                (data.executed_orders || []).forEach(o => {
+                    if (o.status === 'executed') {
+                        showToast(`🤖 Auto-order fired: ${o.message} of ${o.ticker.replace('.NS', '')} @ ₹${o.price.toFixed(2)}`, 'success');
+                    } else {
+                        showToast(`🤖 Auto-order failed for ${o.ticker.replace('.NS', '')}: ${o.message}`, 'error');
+                    }
+                });
+                // Keep the Automation tab's lists in sync if something just fired,
+                // in case the user is looking at it when it happens.
+                if ((data.triggered_alerts || []).length) fetchAndRenderAlerts();
+                if ((data.executed_orders || []).length) fetchAndRenderAutoOrders();
+
                 if(activeTicker) {
                     const liveMatch = globalStocksCache.find(x => x.ticker === activeTicker);
                     if(liveMatch) {
@@ -630,6 +770,182 @@
                         </tr>`;
                 });
             } catch (err) { console.error(err); }
+        }
+
+        async function fetchAndRenderLeaderboard() {
+            try {
+                const res = await fetch(`${API_URL}/leaderboard`, { headers: authHeaders() });
+                const rows = await res.json();
+                const tbody = document.getElementById("leaderboard-table-body");
+                tbody.innerHTML = "";
+
+                if (!rows.length) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-gray-500 py-8 text-sm font-sans">No traders yet.</td></tr>`;
+                    return;
+                }
+
+                rows.forEach(row => {
+                    const plColorClass = row.pl >= 0 ? "text-green-400" : "text-red-400";
+                    const plSign = row.pl >= 0 ? "+" : "";
+                    const highlight = row.is_you ? "bg-teal-500/10" : "";
+                    const medal = row.rank === 1 ? "🥇" : row.rank === 2 ? "🥈" : row.rank === 3 ? "🥉" : row.rank;
+                    tbody.innerHTML += `
+                        <tr class="border-b border-gray-800/60 hover:bg-gray-800/20 transition ${highlight}">
+                            <td class="py-3 pl-2 font-bold">${medal}</td>
+                            <td class="font-bold font-sans text-teal-400">${row.username}${row.is_you ? ' <span class="text-xs text-gray-400 font-sans">(you)</span>' : ''}</td>
+                            <td class="text-gray-300">₹${row.balance.toLocaleString()}</td>
+                            <td class="text-gray-300">₹${row.portfolio_value.toLocaleString()}</td>
+                            <td class="text-white font-bold">₹${row.net_worth.toLocaleString()}</td>
+                            <td class="text-right pr-4 font-bold ${plColorClass}">${plSign}₹${row.pl.toLocaleString()}</td>
+                        </tr>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function createAlert() {
+            const ticker = document.getElementById("alert-ticker").value;
+            const direction = document.getElementById("alert-direction").value;
+            const target_price = document.getElementById("alert-target-price").value;
+            if (!ticker || !target_price || target_price <= 0) return alert("Pick a ticker and a valid target price.");
+
+            const res = await fetch(`${API_URL}/alerts`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...authHeaders() },
+                body: JSON.stringify({ ticker, direction, target_price })
+            });
+            const data = await res.json();
+            if (!res.ok) return alert(data.message || "Could not create alert.");
+            document.getElementById("alert-target-price").value = "";
+            fetchAndRenderAlerts();
+        }
+
+        async function deleteAlert(id) {
+            await fetch(`${API_URL}/alerts/${id}`, { method: "DELETE", headers: authHeaders() });
+            fetchAndRenderAlerts();
+        }
+
+        async function fetchAndRenderAlerts() {
+            try {
+                const res = await fetch(`${API_URL}/alerts`, { headers: authHeaders() });
+                const alerts = await res.json();
+                const list = document.getElementById("alerts-list");
+                list.innerHTML = "";
+
+                if (!alerts.length) {
+                    list.innerHTML = `<p class="text-center text-gray-500 text-sm py-4">No alerts set yet.</p>`;
+                    return;
+                }
+
+                alerts.forEach(a => {
+                    const statusBadge = a.triggered
+                        ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-teal-500/20 text-teal-400 border border-teal-500/30">Triggered</span>`
+                        : `<span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">Active</span>`;
+                    list.innerHTML += `
+                        <div class="flex items-center justify-between bg-gray-900/40 border border-gray-800 rounded-lg p-3 text-sm font-mono">
+                            <div>
+                                <span class="font-bold text-gray-200 font-sans">${a.ticker.replace('.NS', '')}</span>
+                                <span class="text-gray-400"> ${a.direction} ₹${a.target_price}</span>
+                                <div class="mt-1">${statusBadge}</div>
+                            </div>
+                            <button onclick="deleteAlert(${a.id})" class="text-gray-500 hover:text-red-400 text-lg px-2 transition">&times;</button>
+                        </div>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function createAutoOrder() {
+            const ticker = document.getElementById("order-ticker").value;
+            const direction = document.getElementById("order-direction").value;
+            const target_price = document.getElementById("order-target-price").value;
+            const action = document.getElementById("order-action").value;
+            const shares = document.getElementById("order-shares").value;
+            if (!ticker || !target_price || target_price <= 0 || !shares || shares <= 0) {
+                return alert("Fill in ticker, target price, and share count.");
+            }
+
+            const res = await fetch(`${API_URL}/auto-orders`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...authHeaders() },
+                body: JSON.stringify({ ticker, direction, action, target_price, shares })
+            });
+            const data = await res.json();
+            if (!res.ok) return alert(data.message || "Could not create auto order.");
+            document.getElementById("order-target-price").value = "";
+            document.getElementById("order-shares").value = "1";
+            fetchAndRenderAutoOrders();
+        }
+
+        async function deleteAutoOrder(id) {
+            const res = await fetch(`${API_URL}/auto-orders/${id}`, { method: "DELETE", headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) return alert(data.message || "Could not cancel order.");
+            fetchAndRenderAutoOrders();
+        }
+
+        async function fetchAndRenderAutoOrders() {
+            try {
+                const res = await fetch(`${API_URL}/auto-orders`, { headers: authHeaders() });
+                const orders = await res.json();
+                const list = document.getElementById("auto-orders-list");
+                list.innerHTML = "";
+
+                if (!orders.length) {
+                    list.innerHTML = `<p class="text-center text-gray-500 text-sm py-4">No auto orders set yet.</p>`;
+                    return;
+                }
+
+                const statusStyles = {
+                    active: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+                    executed: 'bg-green-500/20 text-green-400 border-green-500/30',
+                    failed: 'bg-red-500/20 text-red-400 border-red-500/30',
+                    cancelled: 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                };
+
+                orders.forEach(o => {
+                    const style = statusStyles[o.status] || statusStyles.active;
+                    const cancelBtn = o.status === 'active'
+                        ? `<button onclick="deleteAutoOrder(${o.id})" class="text-gray-500 hover:text-red-400 text-lg px-2 transition">&times;</button>`
+                        : '';
+                    const executedNote = o.executed_price ? ` @ ₹${o.executed_price.toFixed(2)}` : '';
+                    list.innerHTML += `
+                        <div class="flex items-center justify-between bg-gray-900/40 border border-gray-800 rounded-lg p-3 text-sm font-mono">
+                            <div>
+                                <span class="font-bold text-gray-200 font-sans">${o.ticker.replace('.NS', '')}</span>
+                                <span class="text-gray-400"> if ${o.direction} ₹${o.target_price} &rarr; ${o.action} ${o.shares}</span>
+                                <div class="mt-1"><span class="px-2 py-0.5 rounded text-xs font-bold border ${style}">${o.status}${executedNote}</span></div>
+                            </div>
+                            ${cancelBtn}
+                        </div>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        function showSettingsModal() {
+            document.getElementById("current-password").value = "";
+            document.getElementById("new-password").value = "";
+            document.getElementById("confirm-password").value = "";
+            document.getElementById("settings-modal").classList.remove("hidden");
+        }
+
+        function closeSettingsModal() { document.getElementById("settings-modal").classList.add("hidden"); }
+
+        async function submitChangePassword() {
+            const current_password = document.getElementById("current-password").value;
+            const new_password = document.getElementById("new-password").value;
+            const confirm_password = document.getElementById("confirm-password").value;
+            if (!current_password || !new_password) return alert("Fill in both password fields.");
+            if (new_password !== confirm_password) return alert("New passwords don't match.");
+            if (new_password.length < 6) return alert("New password must be at least 6 characters.");
+
+            const res = await fetch(`${API_URL}/change-password`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...authHeaders() },
+                body: JSON.stringify({ current_password, new_password })
+            });
+            const data = await res.json();
+            if (!res.ok) return alert(data.message || "Could not update password.");
+            alert(data.message);
+            closeSettingsModal();
         }
 
         async function addMoneyPrompt() {

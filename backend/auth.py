@@ -11,7 +11,7 @@ def generate_token(user_id):
     payload = {
         'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1),
         'iat': datetime.datetime.utcnow(),
-        'sub': user_id
+        'sub': str(user_id)  # JWT spec requires 'sub' to be a string
     }
     return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
 
@@ -29,7 +29,7 @@ def token_required(f):
         
         try:
             data = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-            current_user = User.query.get(data['sub'])
+            current_user = User.query.get(int(data['sub']))
             if not current_user:
                 return jsonify({'message': 'User not found!'}), 401
         except Exception as e:

@@ -26,3 +26,27 @@ class Transaction(db.Model):
     shares = db.Column(db.Integer, nullable=False)      # Positive for Buy, Negative for Sell
     buy_price = db.Column(db.Float, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class PriceAlert(db.Model):
+    __tablename__ = 'price_alerts'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    ticker = db.Column(db.String(20), nullable=False)
+    target_price = db.Column(db.Float, nullable=False)
+    direction = db.Column(db.String(10), nullable=False)  # 'above' or 'below'
+    triggered = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AutoOrder(db.Model):
+    __tablename__ = 'auto_orders'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    ticker = db.Column(db.String(20), nullable=False)
+    target_price = db.Column(db.Float, nullable=False)
+    direction = db.Column(db.String(10), nullable=False)  # 'above' or 'below' (condition on price)
+    action = db.Column(db.String(4), nullable=False)      # 'BUY' or 'SELL'
+    shares = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String(10), default='active')   # active, executed, failed, cancelled
+    executed_price = db.Column(db.Float, nullable=True)
+    executed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
