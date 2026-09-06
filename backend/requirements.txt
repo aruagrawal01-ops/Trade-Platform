@@ -8,4 +8,4 @@ Werkzeug==3.0.4
 yfinance==1.5.2
 pandas==3.0.5
 
-anthropic==1.4.0
+google-genai==2.22.0

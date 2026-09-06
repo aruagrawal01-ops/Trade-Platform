@@ -10,7 +10,7 @@ import yfinance as yf
 
 try:
     from ai_agent import analyze as ai_analyze
-except Exception as _ai_exc:  # noqa: BLE001 - missing anthropic pkg shouldn't kill the app
+except Exception as _ai_exc:  # noqa: BLE001 - missing google-genai pkg shouldn't kill the app
     ai_analyze = None
 
 app = Flask(__name__)
@@ -315,14 +315,14 @@ def ai_analyze_route(current_user, ticker):
     """AI analyst view for one ticker. Login-gated so anonymous traffic can't
     burn API credits."""
     if ai_analyze is None:
-        return jsonify({'message': 'AI agent unavailable: anthropic package not installed on the server.'}), 503
+        return jsonify({'message': 'AI agent unavailable: google-genai package not installed on the server.'}), 503
     try:
         return jsonify(ai_analyze(ticker))
     except ValueError as e:
         return jsonify({'message': str(e)}), 400
     except Exception as e:  # noqa: BLE001
         app.logger.error(f"AI analyze failed for {ticker}: {e}")
-        return jsonify({'message': 'AI analysis failed. Check ANTHROPIC_API_KEY and try again.'}), 502
+        return jsonify({'message': 'AI analysis failed. Check GEMINI_API_KEY and try again.'}), 502
 
 
 @app.route('/api/trade', methods=['POST'])

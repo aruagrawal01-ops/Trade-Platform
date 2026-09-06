@@ -1,21 +1,22 @@
 """AI analyst agent: turns a stock's recent price action into a plain-English view.
 
-One Claude call per request. Technical indicators are computed here (pandas only,
+One Gemini call per request. Technical indicators are computed here (pandas only,
 no extra deps) so the model reasons over a handful of numbers instead of raw
 candles. Consumed by the /api/ai/* routes in app.py.
 
 Env:
-  ANTHROPIC_API_KEY  - required for the LLM call (set in Vercel project settings)
-  AI_MODEL           - optional, defaults to claude-opus-5
+  GEMINI_API_KEY  - required for the LLM call (set in Vercel project settings)
+  AI_MODEL        - optional, defaults to gemini-2.5-flash
 """
 import json
 import math
 import os
 
-import anthropic
 import yfinance as yf
+from google import genai
+from google.genai import types
 
-AI_MODEL = os.environ.get("AI_MODEL", "claude-opus-5")
+AI_MODEL = os.environ.get("AI_MODEL", "gemini-2.5-flash")
 DISCLAIMER = "Educational simulation only. Not investment advice."
 
 _client = None
@@ -24,7 +25,7 @@ _client = None
 def _get_client():
     global _client
     if _client is None:
-        _client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY
+        _client = genai.Client()  # reads GEMINI_API_KEY (or GOOGLE_API_KEY)
     return _client
 
 
@@ -99,28 +100,25 @@ def score(ind):
 
 
 def analyze(ticker):
-    """Indicators + one Claude call -> {verdict, confidence, rationale, risks, ...}."""
+    """Indicators + one Gemini call -> {verdict, confidence, rationale, risks, ...}."""
     ind = indicators(ticker)
     prompt = (
         "You are a cautious equity analyst. Below are technical indicators for "
         f"{ticker} on the NSE. Give a short, balanced read for a beginner "
         "paper-trader.\n\n"
         f"{json.dumps(ind, indent=2)}\n\n"
-        "Respond with ONLY a JSON object, no prose around it, with keys:\n"
+        "Return a JSON object with keys:\n"
         '  verdict: one of "BUY", "HOLD", "SELL"\n'
         '  confidence: one of "low", "medium", "high"\n'
         "  rationale: at most 2 sentences\n"
         "  risks: at most 2 sentences"
     )
-    msg = _get_client().messages.create(
+    resp = _get_client().models.generate_content(
         model=AI_MODEL,
-        max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}],
+        contents=prompt,
+        config=types.GenerateContentConfig(response_mime_type="application/json"),
     )
-    text = "".join(b.text for b in msg.content if b.type == "text").strip()
-    if text.startswith("```"):
-        text = text.split("```")[1].removeprefix("json").strip()
-    view = json.loads(text)
+    view = json.loads(resp.text)
     view["indicators"] = ind
     view["score"] = score(ind)
     view["disclaimer"] = DISCLAIMER
