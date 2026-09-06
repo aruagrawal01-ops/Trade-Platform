@@ -6,17 +6,19 @@ candles. Consumed by the /api/ai/* routes in app.py.
 
 Env:
   GEMINI_API_KEY  - required for the LLM call (set in Vercel project settings)
-  AI_MODEL        - optional, defaults to gemini-2.5-flash
+  AI_MODEL        - optional, defaults to gemini-flash-latest
 """
 import json
 import math
 import os
+import time
 
 import yfinance as yf
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 
-AI_MODEL = os.environ.get("AI_MODEL", "gemini-2.5-flash")
+AI_MODEL = os.environ.get("AI_MODEL", "gemini-flash-latest")
 DISCLAIMER = "Educational simulation only. Not investment advice."
 
 _client = None
@@ -113,11 +115,16 @@ def analyze(ticker):
         "  rationale: at most 2 sentences\n"
         "  risks: at most 2 sentences"
     )
-    resp = _get_client().models.generate_content(
-        model=AI_MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(response_mime_type="application/json"),
-    )
+    cfg = types.GenerateContentConfig(response_mime_type="application/json")
+    # Gemini's free tier throws transient 503s under load - retry a few times.
+    for attempt in range(3):
+        try:
+            resp = _get_client().models.generate_content(model=AI_MODEL, contents=prompt, config=cfg)
+            break
+        except genai_errors.ServerError:
+            if attempt == 2:
+                raise
+            time.sleep(1.5 * (attempt + 1))
     view = json.loads(resp.text)
     view["indicators"] = ind
     view["score"] = score(ind)
