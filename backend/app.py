@@ -8,6 +8,11 @@ from models import db, User, Transaction, PriceAlert, AutoOrder
 from auth import generate_token, token_required
 import yfinance as yf
 
+try:
+    from ai_agent import analyze as ai_analyze
+except Exception as _ai_exc:  # noqa: BLE001 - missing anthropic pkg shouldn't kill the app
+    ai_analyze = None
+
 app = Flask(__name__)
 CORS(app)
 
@@ -303,6 +308,22 @@ def get_stock_chart(ticker):
             'y': [round(row['Open'], 2), round(row['High'], 2), round(row['Low'], 2), round(row['Close'], 2)]
         })
     return jsonify(ohlc_data)
+
+@app.route('/api/ai/analyze/<ticker>', methods=['GET'])
+@token_required
+def ai_analyze_route(current_user, ticker):
+    """AI analyst view for one ticker. Login-gated so anonymous traffic can't
+    burn API credits."""
+    if ai_analyze is None:
+        return jsonify({'message': 'AI agent unavailable: anthropic package not installed on the server.'}), 503
+    try:
+        return jsonify(ai_analyze(ticker))
+    except ValueError as e:
+        return jsonify({'message': str(e)}), 400
+    except Exception as e:  # noqa: BLE001
+        app.logger.error(f"AI analyze failed for {ticker}: {e}")
+        return jsonify({'message': 'AI analysis failed. Check ANTHROPIC_API_KEY and try again.'}), 502
+
 
 @app.route('/api/trade', methods=['POST'])
 @token_required
