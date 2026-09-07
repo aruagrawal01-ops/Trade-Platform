@@ -10,7 +10,7 @@ import yfinance as yf
 
 try:
     from ai_agent import analyze as ai_analyze
-except Exception as _ai_exc:  # noqa: BLE001 - missing google-genai pkg shouldn't kill the app
+except Exception as _ai_exc:  # noqa: BLE001 - an import error in ai_agent shouldn't kill the app
     ai_analyze = None
 
 app = Flask(__name__)
@@ -315,7 +315,7 @@ def ai_analyze_route(current_user, ticker):
     """AI analyst view for one ticker. Login-gated so anonymous traffic can't
     burn API credits."""
     if ai_analyze is None:
-        return jsonify({'message': 'AI agent unavailable: google-genai package not installed on the server.'}), 503
+        return jsonify({'message': 'AI agent unavailable: ai_agent module failed to import on the server.'}), 503
     try:
         return jsonify(ai_analyze(ticker))
     except ValueError as e:

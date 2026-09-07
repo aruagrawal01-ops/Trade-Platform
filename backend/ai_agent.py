@@ -13,22 +13,35 @@ import math
 import os
 import time
 
+import requests
 import yfinance as yf
-from google import genai
-from google.genai import errors as genai_errors
-from google.genai import types
 
 AI_MODEL = os.environ.get("AI_MODEL", "gemini-flash-latest")
 DISCLAIMER = "Educational simulation only. Not investment advice."
+_GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
-_client = None
 
-
-def _get_client():
-    global _client
-    if _client is None:
-        _client = genai.Client()  # reads GEMINI_API_KEY (or GOOGLE_API_KEY)
-    return _client
+def _gemini(prompt):
+    """One call to the Gemini REST API. Retries the free tier's transient 503s."""
+    key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not key:
+        raise RuntimeError("GEMINI_API_KEY is not set")
+    body = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"responseMimeType": "application/json"},
+    }
+    for attempt in range(3):
+        r = requests.post(
+            _GEMINI_URL.format(model=AI_MODEL),
+            headers={"x-goog-api-key": key},
+            json=body,
+            timeout=30,
+        )
+        if r.status_code == 503 and attempt < 2:
+            time.sleep(1.5 * (attempt + 1))
+            continue
+        r.raise_for_status()
+        return r.json()["candidates"][0]["content"]["parts"][0]["text"]
 
 
 def _rsi(series, window=14):
@@ -115,17 +128,7 @@ def analyze(ticker):
         "  rationale: at most 2 sentences\n"
         "  risks: at most 2 sentences"
     )
-    cfg = types.GenerateContentConfig(response_mime_type="application/json")
-    # Gemini's free tier throws transient 503s under load - retry a few times.
-    for attempt in range(3):
-        try:
-            resp = _get_client().models.generate_content(model=AI_MODEL, contents=prompt, config=cfg)
-            break
-        except genai_errors.ServerError:
-            if attempt == 2:
-                raise
-            time.sleep(1.5 * (attempt + 1))
-    view = json.loads(resp.text)
+    view = json.loads(_gemini(prompt))
     view["indicators"] = ind
     view["score"] = score(ind)
     view["disclaimer"] = DISCLAIMER
